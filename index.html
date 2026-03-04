@@ -12,7 +12,6 @@
       --bg: #07070f;
       --x: #ff3060;
       --o: #00e0ff;
-      --grid: rgba(90, 70, 210, 0.6);
       --text: #9898c8;
       --muted: #3c3c70;
     }
@@ -256,14 +255,6 @@
 
       <svg class="board-lines" viewBox="0 0 330 330" xmlns="http://www.w3.org/2000/svg">
         <defs>
-          <filter id="glow" x="-30%" y="-30%" width="160%" height="160%">
-            <feGaussianBlur stdDeviation="2" result="blur"/>
-            <feMerge>
-              <feMergeNode in="blur"/>
-              <feMergeNode in="blur"/>
-              <feMergeNode in="SourceGraphic"/>
-            </feMerge>
-          </filter>
           <filter id="strong-glow" x="-50%" y="-50%" width="200%" height="200%">
             <feGaussianBlur stdDeviation="4" result="blur"/>
             <feMerge>
@@ -315,6 +306,13 @@
     const cells = document.querySelectorAll('.cell');
     const statusEl = document.getElementById('status');
     const svg = document.querySelector('.board-lines');
+    const valX = document.getElementById('val-x');
+    const valO = document.getElementById('val-o');
+    const valD = document.getElementById('val-d');
+
+    function playerColor(p) {
+      return p === 'X' ? 'var(--x)' : 'var(--o)';
+    }
 
     function cellCenter(i) {
       return { x: (i % 3) * 110 + 55, y: Math.floor(i / 3) * 110 + 55 };
@@ -364,8 +362,8 @@
           span.className = 'mark';
           span.textContent = val;
           cell.appendChild(span);
-        } else if (!val) {
-          cell.innerHTML = '';
+        } else if (!val && existing) {
+          existing.remove();
         }
       });
     }
@@ -377,17 +375,16 @@
       return null;
     }
 
-    function bumpScore(id) {
-      const el = document.getElementById(id);
+    function bumpScore(el) {
       el.classList.remove('bump');
       void el.offsetWidth;
       el.classList.add('bump');
     }
 
     function updateScores() {
-      document.getElementById('val-x').textContent = scores.X;
-      document.getElementById('val-o').textContent = scores.O;
-      document.getElementById('val-d').textContent = scores.D;
+      valX.textContent = scores.X;
+      valO.textContent = scores.O;
+      valD.textContent = scores.D;
     }
 
     function setStatus(text, color, shadow) {
@@ -414,21 +411,20 @@
         gameOver = true;
         winCombo.forEach(idx => cells[idx].classList.add('win'));
         drawWinLine(winCombo);
-        const c = current === 'X' ? 'var(--x)' : 'var(--o)';
+        const c = playerColor(current);
         setStatus(`${current} vinner! ★`, c, `0 0 20px ${c}`);
         scores[current]++;
         updateScores();
-        bumpScore(current === 'X' ? 'val-x' : 'val-o');
+        bumpScore(current === 'X' ? valX : valO);
       } else if (board.every(Boolean)) {
         gameOver = true;
         setStatus('Uavgjort', 'var(--muted)', 'none');
         scores.D++;
         updateScores();
-        bumpScore('val-d');
+        bumpScore(valD);
       } else {
         current = current === 'X' ? 'O' : 'X';
-        const c = current === 'X' ? 'var(--x)' : 'var(--o)';
-        setStatus(`${current} sin tur`, c);
+        setStatus(`${current} sin tur`, playerColor(current));
       }
     }
 
