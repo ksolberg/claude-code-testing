@@ -1,0 +1,35 @@
+name: Claude PR Merge
+
+on:
+  issue_comment:
+    types: [created]
+
+jobs:
+  merge:
+    if: |
+      github.event.issue.pull_request != null &&
+      contains(github.event.comment.body, '@claude merge') &&
+      contains(fromJSON('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+      id-token: write
+      actions: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Run Claude merge
+        uses: anthropics/claude-code-action@beta
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          claude_args: '--allowed-tools Bash(gh pr:*),Bash(gh api:*)'
+          prompt: |
+            Check the CI status of PR #${{ github.event.issue.number }} using `gh pr checks ${{ github.event.issue.number }}`.
+            If all required checks pass and the PR is approved, merge it using `gh pr merge ${{ github.event.issue.number }} --squash --auto`.
+            If checks are failing or the PR is not approved, post a comment on PR #${{ github.event.issue.number }} explaining why the merge was not performed.
